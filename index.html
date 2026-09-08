@@ -37,7 +37,7 @@ canvas{display:block;width:100%;height:auto;touch-action:none}
 <div class="wrap">
  <div class="top"><div class="brand">CARGO WEEK</div><div class="phase">RETO DE HABILIDAD</div></div>
  <h1>CARGO COLLECTOR 🚛📦</h1>
- <div class="sub">Recoge la mayor cantidad de carga posible y evita los obstáculos.<br><b>1 oportunidad · 2 minutos</b></div>
+ <div class="sub">Recoge la mayor cantidad de carga posible y evita los obstáculos.<br><b>1 oportunidad · 1 minuto</b></div>
 
  <section class="card" id="start">
   <div class="form">
@@ -79,7 +79,7 @@ canvas{display:block;width:100%;height:auto;touch-action:none}
 </div>
 <script>
 const SHEET_URL="https://script.google.com/macros/s/AKfycbwjm5v2YsMHqPzraT8RdtlUriGZJm2U-TtlqAdi64BsQK5byKvoS19jvo2dsRZG227YUw/exec";
-const GAME_SECONDS=120;
+const GAME_SECONDS=60;
 const $=s=>document.querySelector(s);
 const canvas=$("#arena"),ctx=canvas.getContext("2d");
 let running=false,last=0,left=GAME_SECONDS,score=0,raf=null,dir={x:0,y:0},hitCooldown=0;
