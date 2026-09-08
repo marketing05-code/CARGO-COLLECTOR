@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Cargo Collector · Cargo Week</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#06172c;color:#fff;font-family:Arial,sans-serif}
+.wrap{max-width:900px;margin:auto;padding:20px 14px 40px}
+.top{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #49617c;padding-bottom:12px}
+.brand{font-weight:900;letter-spacing:.14em}.phase{font-size:12px;letter-spacing:2px;color:#9fb1c6}
+h1{text-align:center;font-size:clamp(30px,7vw,54px);margin:24px 0 5px}
+.sub{text-align:center;color:#c5d1df;line-height:1.4}
+.card{margin-top:18px;background:#0a2342;border:1px solid #49617c;border-radius:20px;padding:20px}
+.form{display:grid;grid-template-columns:1fr 1fr auto;gap:10px}
+input,select,button{font:inherit;padding:13px;border-radius:11px}
+input,select{border:1px solid #657489;background:#e8edf2;color:#07172b}
+button{border:0;font-weight:900;cursor:pointer}
+.primary{background:#fff;color:#07172b}
+#game,#end{display:none}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.stat{text-align:center;background:#071a33;border:1px solid #355675;border-radius:12px;padding:10px}
+.stat small{display:block;color:#9fb1c6}.stat b{font-size:21px}
+.arenaWrap{position:relative;border-radius:16px;overflow:hidden;border:2px solid #1687e8;background:#071a33}
+canvas{display:block;width:100%;height:auto;touch-action:none}
+.countdown{position:absolute;inset:0;display:none;place-items:center;background:rgba(2,10,22,.65);font-size:clamp(65px,18vw,130px);font-weight:900}
+.controls{display:grid;grid-template-columns:repeat(3,58px);gap:7px;justify-content:center;margin-top:14px}
+.controls button{height:52px;background:#e8edf2;color:#07172b;font-size:21px}
+.hint{text-align:center;color:#9fb1c6;font-size:12px;margin-top:10px}
+.score{font-size:58px;font-weight:900;text-align:center}.end{text-align:center}
+#msg{color:#ffb4b4;text-align:center;font-weight:700;margin-top:10px;min-height:18px}
+@media(max-width:650px){.form{grid-template-columns:1fr}.card{padding:14px}.stats{gap:5px}.stat{padding:8px 4px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+ <div class="top"><div class="brand">CARGO WEEK</div><div class="phase">RETO DE HABILIDAD</div></div>
+ <h1>CARGO COLLECTOR 🚛📦</h1>
+ <div class="sub">Recoge la mayor cantidad de carga posible y evita los obstáculos.<br><b>1 oportunidad · 2 minutos</b></div>
+
+ <section class="card" id="start">
+  <div class="form">
+   <input id="name" maxlength="70" placeholder="Nombre completo">
+   <select id="branch">
+    <option value="">Selecciona tu sucursal</option>
+    <option>Estado de México</option><option>Buenos Aires</option><option>Victoria</option>
+    <option>Nuevo Repueblo</option><option>Leamington</option><option>Tampico</option>
+    <option>Ontario</option><option>Detroit</option><option>San Antonio</option><option>Laredo</option>
+   </select>
+   <button class="primary" id="startBtn">COMENZAR</button>
+  </div>
+  <div id="msg"></div>
+ </section>
+
+ <section class="card" id="game">
+  <div class="stats">
+   <div class="stat"><small>PUNTOS</small><b id="score">0</b></div>
+   <div class="stat"><small>TIEMPO</small><b id="timer">02:00</b></div>
+   <div class="stat"><small>CARGA</small><b id="size">1.0×</b></div>
+  </div>
+  <div class="arenaWrap">
+   <canvas id="arena" width="760" height="500"></canvas>
+   <div class="countdown" id="countdown">3</div>
+  </div>
+  <div class="controls">
+   <span></span><button data-dir="up">▲</button><span></span>
+   <button data-dir="left">◀</button><button data-dir="down">▼</button><button data-dir="right">▶</button>
+  </div>
+  <div class="hint">Celular: toca o arrastra dentro del mapa · Computadora: usa las flechas.</div>
+ </section>
+
+ <section class="card end" id="end">
+  <div class="phase">PARTIDA TERMINADA</div>
+  <h2>¡CARGA COMPLETADA! 🚚</h2>
+  <div class="score" id="finalScore">0</div>
+  <p>Tu resultado ha sido registrado.</p>
+ </section>
+</div>
+<script>
+const SHEET_URL="https://script.google.com/macros/s/AKfycbwjm5v2YsMHqPzraT8RdtlUriGZJm2U-TtlqAdi64BsQK5byKvoS19jvo2dsRZG227YUw/exec";
+const GAME_SECONDS=120;
+const $=s=>document.querySelector(s);
+const canvas=$("#arena"),ctx=canvas.getContext("2d");
+let running=false,last=0,left=GAME_SECONDS,score=0,raf=null,dir={x:0,y:0},hitCooldown=0;
+let player={x:380,y:250,r:17,speed:225},items=[],obstacles=[];
+const norm=s=>String(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]/g,"");
+function key(){return "cargoCollector::"+norm($("#name").value)+"::"+norm($("#branch").value)}
+function rnd(a,b){return a+Math.random()*(b-a)}
+function spawnItem(){
+ let special=Math.random()<.14;
+ items.push({x:rnd(25,735),y:rnd(25,475),r:special?9:7,special});
+}
+function reset(){
+ score=0;left=GAME_SECONDS;player={x:380,y:250,r:17,speed:225};dir={x:0,y:0};items=[];obstacles=[];hitCooldown=0;
+ for(let i=0;i<32;i++)spawnItem();
+ for(let i=0;i<11;i++)obstacles.push({x:rnd(45,715),y:rnd(45,455),r:rnd(15,24)});
+ updateStats();draw();
+}
+function updateStats(){
+ $("#score").textContent=score;
+ $("#size").textContent=(player.r/17).toFixed(1)+"×";
+ let s=Math.max(0,Math.ceil(left));$("#timer").textContent=String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
+}
+function draw(){
+ ctx.clearRect(0,0,760,500);ctx.fillStyle="#071a33";ctx.fillRect(0,0,760,500);
+ ctx.strokeStyle="rgba(255,255,255,.055)";ctx.lineWidth=1;
+ for(let x=0;x<760;x+=38){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,500);ctx.stroke()}
+ for(let y=0;y<500;y+=38){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(760,y);ctx.stroke()}
+ obstacles.forEach(o=>{ctx.fillStyle="#66788b";ctx.beginPath();ctx.arc(o.x,o.y,o.r,0,Math.PI*2);ctx.fill();ctx.font="18px Arial";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("🚧",o.x,o.y)});
+ items.forEach(it=>{ctx.fillStyle=it.special?"#ffd24a":"#dbe5ef";ctx.beginPath();ctx.arc(it.x,it.y,it.r,0,Math.PI*2);ctx.fill();ctx.font=it.special?"15px Arial":"13px Arial";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(it.special?"★":"📦",it.x,it.y)});
+ ctx.fillStyle="#1375d1";ctx.beginPath();ctx.arc(player.x,player.y,player.r,0,Math.PI*2);ctx.fill();
+ ctx.font=Math.max(19,player.r*1.25)+"px Arial";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("🚛",player.x,player.y);
+}
+function loop(ts){
+ if(!running)return;if(!last)last=ts;
+ const dt=Math.min(.04,(ts-last)/1000);last=ts;left-=dt;hitCooldown=Math.max(0,hitCooldown-dt);
+ player.x=Math.max(player.r,Math.min(760-player.r,player.x+dir.x*player.speed*dt));
+ player.y=Math.max(player.r,Math.min(500-player.r,player.y+dir.y*player.speed*dt));
+ for(let i=items.length-1;i>=0;i--){
+  let a=items[i];if(Math.hypot(player.x-a.x,player.y-a.y)<player.r+a.r){
+   score+=a.special?25:10;player.r=Math.min(38,player.r+(a.special?1.1:.55));items.splice(i,1);spawnItem();
+  }
+ }
+ for(const o of obstacles){
+  let dx=player.x-o.x,dy=player.y-o.y,d=Math.hypot(dx,dy);
+  if(d<player.r+o.r&&d>0&&hitCooldown<=0){score=Math.max(0,score-15);player.r=Math.max(15,player.r-1.5);player.x+=dx/d*15;player.y+=dy/d*15;hitCooldown=.45}
+ }
+ updateStats();draw();
+ if(left<=0){finish();return}raf=requestAnimationFrame(loop);
+}
+async function countdown(){
+ const c=$("#countdown");c.style.display="grid";
+ for(const v of ["3","2","1","¡CARGA!"]){c.textContent=v;await new Promise(r=>setTimeout(r,v==="¡CARGA!"?600:750))}
+ c.style.display="none";
+}
+$("#startBtn").addEventListener("click",async()=>{
+ const n=$("#name").value.trim(),b=$("#branch").value;$("#msg").textContent="";
+ if(n.split(/\s+/).length<2||!b){$("#msg").textContent="Escribe tu nombre completo y selecciona tu sucursal.";return}
+ if(localStorage.getItem(key())==="1"){ $("#msg").textContent="Ya utilizaste tu única oportunidad para jugar.";return}
+ localStorage.setItem(key(),"1");$("#start").style.display="none";$("#game").style.display="block";reset();await countdown();running=true;last=0;raf=requestAnimationFrame(loop);
+});
+function setDir(d){dir=d==="up"?{x:0,y:-1}:d==="down"?{x:0,y:1}:d==="left"?{x:-1,y:0}:{x:1,y:0}}
+document.querySelectorAll("[data-dir]").forEach(b=>b.addEventListener("pointerdown",()=>setDir(b.dataset.dir)));
+document.addEventListener("keydown",e=>{if(!running)return;let m={ArrowUp:"up",ArrowDown:"down",ArrowLeft:"left",ArrowRight:"right"}[e.key];if(m){e.preventDefault();setDir(m)}});
+function pointDir(e){
+ const r=canvas.getBoundingClientRect(),x=(e.clientX-r.left)*760/r.width,y=(e.clientY-r.top)*500/r.height;
+ let dx=x-player.x,dy=y-player.y,l=Math.hypot(dx,dy)||1;dir={x:dx/l,y:dy/l};
+}
+canvas.addEventListener("pointerdown",e=>{if(running){pointDir(e);canvas.setPointerCapture?.(e.pointerId)}});
+canvas.addEventListener("pointermove",e=>{if(running&&e.buttons)pointDir(e)});
+function finish(){
+ running=false;if(raf)cancelAnimationFrame(raf);$("#game").style.display="none";$("#end").style.display="block";$("#finalScore").textContent=score+" PTS";
+ const payload={nombre:$("#name").value.trim(),sucursal:$("#branch").value,puntos:score,tiempo:"02:00",juego:"Cargo Collector",fase:"Reto de habilidad",fecha:new Date().toISOString()};
+ if(SHEET_URL.startsWith("http"))fetch(SHEET_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(payload)}).catch(()=>{});
+}
+reset();
+</script>
+</body></html>
