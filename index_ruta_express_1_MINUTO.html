@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Ruta Express · Cargo Week</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#04162b;color:#fff;font-family:Arial,sans-serif}
+.wrap{max-width:900px;margin:auto;padding:18px 14px 36px}
+.top{display:flex;justify-content:space-between;border-bottom:1px solid #46617c;padding:10px 2px 13px;font-weight:900;letter-spacing:.13em}
+h1{text-align:center;font-size:clamp(34px,8vw,58px);margin:24px 0 5px}.sub{text-align:center;color:#b8c8d9}
+.card{background:#092441;border:1px solid #48647f;border-radius:20px;padding:18px;margin-top:18px}
+.instructions{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:16px 0}
+.rule{background:#061a32;border:1px solid #355879;border-radius:14px;padding:13px}
+.rule b{font-size:18px}.rule span{display:block;color:#b9c8d7;font-size:13px;margin-top:5px}
+.demo{position:relative;height:180px;overflow:hidden;border:2px solid #1689ed;border-radius:15px;background:#303841}
+.roadline{position:absolute;left:49%;width:2%;height:100%;background:repeating-linear-gradient(to bottom,#fff 0 20px,transparent 20px 42px);opacity:.65}
+.demoTruck{position:absolute;bottom:15px;left:24%;font-size:35px;animation:demoMove 4s infinite ease-in-out}
+.demoBox{position:absolute;top:30px;left:24%;font-size:27px;animation:boxDown 4s infinite linear}
+.demoCar{position:absolute;top:-50px;right:22%;font-size:42px;animation:carDown 3s infinite linear}
+@keyframes demoMove{0%,40%{left:24%}55%,100%{left:68%}}
+@keyframes boxDown{0%{top:-35px}100%{top:190px}}
+@keyframes carDown{0%{top:-60px}100%{top:200px}}
+.form{display:grid;grid-template-columns:1fr 1fr auto;gap:9px;margin-top:15px}
+input,select,button{font:inherit;padding:13px;border-radius:11px}input,select{border:1px solid #718094;background:#eef2f5;color:#06162b}
+button{border:0;font-weight:900;cursor:pointer}.primary{background:#fff;color:#06162b}
+#game,#end{display:none}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:10px}
+.stat{text-align:center;background:#061a32;border-radius:12px;padding:9px;border:1px solid #315574}.stat small{display:block;color:#a8bacb}.stat b{font-size:21px}
+.arena{position:relative;overflow:hidden;border-radius:16px;border:2px solid #1689ed;background:#303841}
+canvas{display:block;width:100%;height:auto;touch-action:none}
+.count{position:absolute;inset:0;display:none;place-items:center;background:#041020bb;font-size:100px;font-weight:900}
+.controls{display:flex;gap:12px;justify-content:center;margin-top:13px}.controls button{width:105px;background:#e8edf2;color:#06162b;font-size:24px}
+.note{text-align:center;color:#9eb1c4;font-size:12px;margin-top:10px}.end{text-align:center}.big{font-size:60px;font-weight:900}
+#msg{min-height:18px;color:#ffb2b2;text-align:center;font-weight:bold;margin-top:9px}
+@media(max-width:650px){.instructions{grid-template-columns:1fr 1fr}.form{grid-template-columns:1fr}.card{padding:13px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="top"><div>CARGO WEEK</div><div>RETO DE HABILIDAD</div></div>
+<h1>RUTA EXPRESS 🚛💨</h1>
+<div class="sub">Mantén tu carga en movimiento. Esquiva, recoge y suma.</div>
+
+<section class="card" id="intro">
+ <h2 style="margin-top:0">¿Cómo se juega?</h2>
+ <div class="instructions">
+  <div class="rule"><b>📦 +10 puntos</b><span>Recoge paquetes normales.</span></div>
+  <div class="rule"><b>⭐ +25 puntos</b><span>Recoge la carga especial.</span></div>
+  <div class="rule"><b>🚧 −15 puntos</b><span>Evita conos y barreras.</span></div>
+  <div class="rule"><b>🚚 −35 puntos</b><span>¡Cuidado! Camiones cruzan de sorpresa.</span></div>
+ </div>
+ <h3>Demostración</h3>
+ <div class="demo"><div class="roadline"></div><div class="demoBox">📦</div><div class="demoTruck">🚛</div><div class="demoCar">🚚</div></div>
+ <p class="note">Muévete entre los 3 carriles con ◀ ▶. La velocidad aumenta durante la partida.</p>
+ <div class="form">
+  <input id="name" placeholder="Nombre completo" maxlength="70">
+  <select id="branch"><option value="">Selecciona tu sucursal</option><option>Estado de México</option><option>Buenos Aires</option><option>Victoria</option><option>Nuevo Repueblo</option><option>Leamington</option><option>Tampico</option><option>Ontario</option><option>Detroit</option><option>San Antonio</option><option>Laredo</option></select>
+  <button class="primary" id="startBtn">COMENZAR</button>
+ </div><div id="msg"></div>
+</section>
+
+<section class="card" id="game">
+ <div class="stats"><div class="stat"><small>PUNTOS</small><b id="score">0</b></div><div class="stat"><small>TIEMPO</small><b id="timer">01:00</b></div><div class="stat"><small>VELOCIDAD</small><b id="speed">1.0×</b></div></div>
+ <div class="arena"><canvas id="cv" width="600" height="720"></canvas><div class="count" id="count">3</div></div>
+ <div class="controls"><button id="left">◀</button><button id="right">▶</button></div>
+ <div class="note">También puedes usar las flechas del teclado o deslizar sobre la carretera.</div>
+</section>
+<section class="card end" id="end"><div>RUTA COMPLETADA</div><h2>¡FIN DEL RECORRIDO! 🏁</h2><div class="big" id="final">0 PTS</div><p>Tu resultado ha sido registrado.</p></section>
+</div>
+<script>
+const SHEET_URL="https://script.google.com/macros/s/AKfycbwjm5v2YsMHqPzraT8RdtlUriGZJm2U-TtlqAdi64BsQK5byKvoS19jvo2dsRZG227YUw/exec";
+const GAME_SECONDS=60,$=s=>document.querySelector(s),cv=$("#cv"),c=cv.getContext("2d");
+const lanes=[170,300,430]; let lane=1,player={x:300,y:620,w:55,h:70},objs=[],score=0,left=GAME_SECONDS,running=false,last=0,spawn=0,surprise=0,road=0,raf;
+const normalize=s=>String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]/g,"");
+function pkey(){return "rutaExpress::"+normalize($("#name").value)+"::"+normalize($("#branch").value)}
+function reset(){lane=1;player.x=lanes[1];objs=[];score=0;left=GAME_SECONDS;spawn=0;surprise=3+Math.random()*3;road=0;update()}
+function update(){ $("#score").textContent=score;let s=Math.max(0,Math.ceil(left));$("#timer").textContent=String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");$("#speed").textContent=(1+(GAME_SECONDS-left)/GAME_SECONDS*1.4).toFixed(1)+"×"}
+function addObj(type){
+ let l=Math.floor(Math.random()*3), y=-80;
+ let map={box:["📦",10,30],star:["⭐",25,28],cone:["🚧",-15,38],barrier:["⛔",-15,40]};
+ let m=map[type];objs.push({type,x:lanes[l],y,emoji:m[0],pts:m[1],r:m[2],vy:190});
+}
+function addSurprise(){
+ let fromLeft=Math.random()<.5;
+ objs.push({type:"cross",x:fromLeft?-80:680,y:180+Math.random()*300,emoji:"🚚",pts:-35,r:48,vx:fromLeft?360:-360,vy:0});
+}
+function collide(o){return Math.abs(player.x-o.x)<(player.w/2+o.r*.65)&&Math.abs(player.y-o.y)<(player.h/2+o.r*.65)}
+function draw(){
+ c.fillStyle="#303841";c.fillRect(0,0,600,720);
+ c.fillStyle="#17202a";c.fillRect(80,0,440,720);
+ c.fillStyle="#fff";c.globalAlpha=.65;
+ for(let x of [235,365])for(let y=-60+(road%60);y<720;y+=60)c.fillRect(x-3,y,6,28);
+ c.globalAlpha=1;c.fillStyle="#b9c1c9";c.fillRect(73,0,7,720);c.fillRect(520,0,7,720);
+ objs.forEach(o=>{c.font=(o.type==="cross"?54:38)+"px Arial";c.textAlign="center";c.textBaseline="middle";c.fillText(o.emoji,o.x,o.y)});
+ c.font="58px Arial";c.fillText("🚛",player.x,player.y);
+}
+function loop(t){
+ if(!running)return;if(!last)last=t;let dt=Math.min(.04,(t-last)/1000);last=t;left-=dt;
+ let mult=1+(GAME_SECONDS-left)/GAME_SECONDS*1.4;road+=260*mult*dt;spawn-=dt;surprise-=dt;
+ if(spawn<=0){let r=Math.random();addObj(r<.48?"box":r<.60?"star":r<.82?"cone":"barrier");spawn=Math.max(.28,.68-(GAME_SECONDS-left)*.0022)}
+ if(surprise<=0){addSurprise();surprise=4+Math.random()*5}
+ for(let i=objs.length-1;i>=0;i--){
+  let o=objs[i];if(o.type==="cross")o.x+=o.vx*dt;else o.y+=o.vy*mult*dt;
+  if(collide(o)){score=Math.max(0,score+o.pts);objs.splice(i,1);continue}
+  if(o.y>790||o.x<-120||o.x>720)objs.splice(i,1);
+ }
+ update();draw();if(left<=0){finish();return}raf=requestAnimationFrame(loop)
+}
+function move(d){lane=Math.max(0,Math.min(2,lane+d));player.x=lanes[lane]}
+$("#left").onclick=()=>move(-1);$("#right").onclick=()=>move(1);
+document.addEventListener("keydown",e=>{if(!running)return;if(e.key==="ArrowLeft"){e.preventDefault();move(-1)}if(e.key==="ArrowRight"){e.preventDefault();move(1)}});
+let sx=null;cv.addEventListener("pointerdown",e=>sx=e.clientX);cv.addEventListener("pointerup",e=>{if(sx===null)return;let d=e.clientX-sx;if(Math.abs(d)>25)move(d>0?1:-1);sx=null});
+async function countdown(){let el=$("#count");el.style.display="grid";for(let x of ["3","2","1","¡YA!"]){el.textContent=x;await new Promise(r=>setTimeout(r,x==="¡YA!"?500:700))}el.style.display="none"}
+$("#startBtn").onclick=async()=>{
+ let n=$("#name").value.trim(),b=$("#branch").value;$("#msg").textContent="";
+ if(n.split(/\s+/).length<2||!b){$("#msg").textContent="Escribe tu nombre completo y selecciona tu sucursal.";return}
+ if(localStorage.getItem(pkey())==="1"){ $("#msg").textContent="Ya utilizaste tu única oportunidad.";return}
+ localStorage.setItem(pkey(),"1");$("#intro").style.display="none";$("#game").style.display="block";reset();draw();await countdown();running=true;last=0;raf=requestAnimationFrame(loop)
+};
+function finish(){
+ running=false;cancelAnimationFrame(raf);$("#game").style.display="none";$("#end").style.display="block";$("#final").textContent=score+" PTS";
+ let payload={nombre:$("#name").value.trim(),sucursal:$("#branch").value,puntos:score,tiempo:"01:00",juego:"Ruta Express",fase:"Reto de habilidad",fecha:new Date().toISOString()};
+ fetch(SHEET_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(payload)}).catch(()=>{});
+}
+reset();draw();
+</script>
+</body></html>
